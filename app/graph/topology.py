@@ -12,3 +12,6 @@ class CloudTopology:
             resource_type=resource.resource_type,
             name=resource.name
         )
+
+    def add_relationship(self, source_id, target_id):
+        self.graph.add_edge(source_id, target_id)
