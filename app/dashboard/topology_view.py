@@ -1,6 +1,5 @@
 from rich.console import Console
 from rich.tree import Tree
-
 console = Console()
 
 def render_topology(graph):
