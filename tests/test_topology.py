@@ -73,3 +73,51 @@ assert topology.graph.has_edge("i-12345", "db-001")
 assert not topology.graph.has_edge("subnet-001", "vpc-001")
 assert not topology.graph.has_edge("i-12345", "subnet-001")
 assert not topology.graph.has_edge("db-001", "i-12345")
+
+path = topology.find_path(
+    "vpc-001",
+    "db-001"
+)
+
+print("Path:", path)
+
+assert path == [
+    "vpc-001",
+    "subnet-001",
+    "i-12345",
+    "db-001"
+]
+
+path_to_ec2 = topology.find_path(
+    "vpc-001",
+    "i-12345"
+)
+
+print("Path to EC2:", path_to_ec2)
+
+assert path_to_ec2 == [
+    "vpc-001",
+    "subnet-001",
+    "i-12345"
+]
+
+reverse_path = topology.find_path(
+    "db-001",
+    "vpc-001"
+)
+
+print("Reverse path:", reverse_path)
+
+assert reverse_path is None
+
+direct_path = topology.find_path(
+    "i-12345",
+    "db-001"
+)
+
+print("Direct path:", direct_path)
+
+assert direct_path == [
+    "i-12345",
+    "db-001"
+]
