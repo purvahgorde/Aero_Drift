@@ -26,4 +26,16 @@ class CloudTopology:
         except nx.NetworkXNoPath:
             return None
 
+    def get_nodes(self):
+        return list(self.graph.nodes(data=True))
+
+    def get_edges(self):
+        return list(self.graph.edges()) 
+
+    def get_graph_summary(self):
+        return {
+            "nodes": self.graph.number_of_nodes(),
+            "edges": self.graph.number_of_edges()
+        }
+
   

@@ -121,3 +121,24 @@ assert direct_path == [
     "i-12345",
     "db-001"
 ]
+
+nodes = topology.get_nodes()
+
+print("Inspected nodes:", nodes)
+
+assert len(nodes) == 4
+
+edges = topology.get_edges()
+
+print("Inspected edges:", edges)
+
+assert len(edges) == 3
+
+summary = topology.get_graph_summary()
+
+print("Graph summary:", summary)
+
+assert summary == {
+    "nodes": 4,
+    "edges": 3
+}
