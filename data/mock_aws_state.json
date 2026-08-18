@@ -1,0 +1,35 @@
+{
+  "vpcs": [
+    {
+      "id": "vpc-001",
+      "cidr": "10.0.0.0/16",
+      "state": "available",
+      "tags": [
+        {
+          "Key": "Name",
+          "Value": "AeroDrift-VPC"
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {
+      "id": "i-001",
+      "subnet_id": "subnet-001",
+      "vpc_id": "vpc-001",
+      "state": "running",
+      "security_group_ids": [
+        "sg-001"
+      ]
+    },
+    {
+      "id": "i-002",
+      "subnet_id": "subnet-002",
+      "vpc_id": "vpc-001",
+      "state": "stopped",
+      "security_group_ids": [
+        "sg-002"
+      ]
+    }
+  ]
+}
