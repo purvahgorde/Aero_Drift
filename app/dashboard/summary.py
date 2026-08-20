@@ -14,11 +14,8 @@ def show_summary(state: dict) -> None:
 
     table.add_row("VPCs", str(len(state.get("vpcs", []))))
     table.add_row("Subnets", str(len(state.get("subnets", []))))
-    table.add_row("EC2 Instances", str(len(state.get("instances", []))))
-    table.add_row(
-        "Security Groups",
-        str(len(state.get("security_groups", [])))
-    )
+    table.add_row("EC2 Instances", str(len(state.get("instances", state.get("ec2", [])))))
+    table.add_row("Security Groups", str(len(state.get("security_groups", []))))
 
     console.print(table)
 
