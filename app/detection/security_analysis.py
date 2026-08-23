@@ -12,3 +12,29 @@ def allows_public_ingress(security_group):
                 return True
 
     return False
+
+def get_publicly_exposed_instances(topology, security_groups):
+    """
+    Find EC2 instances connected to Security Groups
+    that allow public ingress.
+    """
+
+    exposed_instances = []
+
+    for security_group in security_groups:
+        if not allows_public_ingress(security_group):
+            continue
+
+        security_group_id = security_group.get("id")
+
+        if not security_group_id:
+            continue
+
+        for source_id, target_id in topology.get_edges():
+            if target_id == security_group_id:
+                node_data = topology.graph.nodes.get(source_id, {})
+
+                if node_data.get("resource_type") == "EC2":
+                    exposed_instances.append(source_id)
+
+    return exposed_instances
