@@ -1,7 +1,12 @@
 from app.detection.security_analysis import allows_public_ingress
 from app.detection.security_analysis import get_publicly_exposed_instances
 from app.graph.topology import create_network_graph
-
+from app.detection.security_analysis import (
+    allows_public_ingress,
+    get_publicly_exposed_instances,
+    find_database_paths,
+    detect_security_findings
+)
 
 # Security group with public ingress
 public_security_group = {
@@ -84,6 +89,14 @@ resources = {
         }
     ],
 
+    "databases": [
+    {
+        "id": "db-001",
+        "name": "private-db",
+        "instance_id": "i-12345"
+    }
+    ],
+
     "security_groups": [
         {
             "id": "sg-001",
@@ -116,3 +129,50 @@ print("Publicly exposed EC2 instances:", exposed_instances)
 
 assert exposed_instances == ["i-12345"]
 # print("Day 8 test passed!")
+
+database_paths = find_database_paths(
+    topology,
+    exposed_instances
+)
+
+print("Database paths:", database_paths)
+
+assert database_paths == [
+    {
+        "instance_id": "i-12345",
+        "database_id": "db-001",
+        "path": [
+            "i-12345",
+            "db-001"
+        ]
+    }
+]
+
+# print("Day 9 test passed!")
+
+findings = detect_security_findings(
+    topology,
+    resources
+)
+
+print("Security findings:", findings)
+
+assert len(findings) == 1
+
+assert findings[0]["severity"] == "HIGH"
+
+assert findings[0]["instance_id"] == "i-12345"
+
+assert findings[0]["database_id"] == "db-001"
+
+assert findings[0]["path"] == [
+    "i-12345",
+    "db-001"
+]
+
+assert findings[0]["reason"] == (
+    "Publicly exposed EC2 instance has "
+    "a path to a database"
+)
+
+print("Day 10 test passed!")
