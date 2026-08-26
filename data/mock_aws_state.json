@@ -49,17 +49,34 @@
     }
   ],
   "security_groups": [
-    {
-      "id": "sg-001",
-      "vpc_id": "vpc-001",
-      "name": "web-sg",
-      "description": "Web Security Group"
-    },
-    {
-      "id": "sg-002",
-      "vpc_id": "vpc-001",
-      "name": "db-sg",
-      "description": "Database Security Group"
-    }
-  ]
+  {
+    "id": "sg-001",
+    "vpc_id": "vpc-001",
+    "name": "web-sg",
+    "description": "Web Security Group",
+    "ingress_rules": [
+      {
+        "protocol": "tcp",
+        "from_port": 80,
+        "to_port": 80,
+        "source": "0.0.0.0/0"
+      }
+    ]
+  },
+  {
+    "id": "sg-002",
+    "vpc_id": "vpc-001",
+    "name": "db-sg",
+    "description": "Database Security Group",
+    "ingress_rules": [
+      {
+        "protocol": "tcp",
+        "from_port": 22,
+        "to_port": 22,
+        "source": "0.0.0.0/0"
+      }
+    ]
+  }
+]
+ 
 }
