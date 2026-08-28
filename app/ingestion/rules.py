@@ -9,12 +9,31 @@ def parse_ingress_rules(security_group):
         from_port = permission.get("FromPort")
         to_port = permission.get("ToPort")
 
+        # IPv4 CIDR sources
         for ip_range in permission.get("IpRanges", []):
             rules.append({
                 "protocol": protocol,
                 "from_port": from_port,
                 "to_port": to_port,
                 "source": ip_range.get("CidrIp")
+            })
+
+        # IPv6 CIDR sources
+        for ip_range in permission.get("Ipv6Ranges", []):
+            rules.append({
+                "protocol": protocol,
+                "from_port": from_port,
+                "to_port": to_port,
+                "source": ip_range.get("CidrIpv6")
+            })
+
+        # Security group sources
+        for group in permission.get("UserIdGroupPairs", []):
+            rules.append({
+                "protocol": protocol,
+                "from_port": from_port,
+                "to_port": to_port,
+                "source": group.get("GroupId")
             })
 
     return rules

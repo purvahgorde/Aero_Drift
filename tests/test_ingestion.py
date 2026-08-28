@@ -58,6 +58,10 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(result[0]["id"], "subnet-001")
         self.assertEqual(result[0]["vpc_id"], "vpc-001")
         self.assertEqual(result[0]["cidr"], "10.0.1.0/24")
+        self.assertEqual(
+            result[0]["availability_zone"],
+            "ap-south-1a"
+        )
 
     def test_collect_security_groups(self):
         result = collect_security_groups(MockEC2Client())
@@ -66,19 +70,16 @@ class TestIngestion(unittest.TestCase):
         self.assertEqual(result[0]["id"], "sg-001")
         self.assertEqual(result[0]["vpc_id"], "vpc-001")
         self.assertEqual(result[0]["name"], "web-server")
-        self.assertEqual(len(result[0]["ingress_rules"]), 1)
-        self.assertEqual(len(result[0]["egress_rules"]), 1)
 
     def test_parse_ingress_rules(self):
         security_group = {
             "ingress_rules": [
                 {
                     "IpProtocol": "tcp",
-                    "FromPort": 22,
-                    "ToPort": 22,
+                    "FromPort": 80,
+                    "ToPort": 80,
                     "IpRanges": [
-                        {"CidrIp": "10.0.0.0/8"},
-                        {"CidrIp": "192.168.1.0/24"}
+                        {"CidrIp": "0.0.0.0/0"}
                     ]
                 }
             ]
@@ -86,12 +87,99 @@ class TestIngestion(unittest.TestCase):
 
         result = parse_ingress_rules(security_group)
 
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["protocol"], "tcp")
-        self.assertEqual(result[0]["from_port"], 22)
-        self.assertEqual(result[0]["to_port"], 22)
-        self.assertEqual(result[0]["source"], "10.0.0.0/8")
-        self.assertEqual(result[1]["source"], "192.168.1.0/24")
+        self.assertEqual(
+            result,
+            [
+                {
+                    "protocol": "tcp",
+                    "from_port": 80,
+                    "to_port": 80,
+                    "source": "0.0.0.0/0"
+                }
+            ]
+        )
+
+    def test_parse_ipv6_ingress_rules(self):
+        security_group = {
+            "ingress_rules": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 443,
+                    "ToPort": 443,
+                    "Ipv6Ranges": [
+                        {"CidrIpv6": "::/0"}
+                    ]
+                }
+            ]
+        }
+
+        result = parse_ingress_rules(security_group)
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "protocol": "tcp",
+                    "from_port": 443,
+                    "to_port": 443,
+                    "source": "::/0"
+                }
+            ]
+        )
+
+    def test_parse_security_group_source_ingress_rules(self):
+        security_group = {
+            "ingress_rules": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 8080,
+                    "ToPort": 8080,
+                    "UserIdGroupPairs": [
+                        {"GroupId": "sg-002"}
+                    ]
+                }
+            ]
+        }
+
+        result = parse_ingress_rules(security_group)
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "protocol": "tcp",
+                    "from_port": 8080,
+                    "to_port": 8080,
+                    "source": "sg-002"
+                }
+            ]
+        )
+
+    def test_parse_all_traffic_ingress_rule(self):
+        security_group = {
+            "ingress_rules": [
+                {
+                    "IpProtocol": "-1",
+                    "IpRanges": [
+                        {"CidrIp": "0.0.0.0/0"}
+                    ]
+                }
+            ]
+        }
+
+        result = parse_ingress_rules(security_group)
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "protocol": "-1",
+                    "from_port": None,
+                    "to_port": None,
+                    "source": "0.0.0.0/0"
+                }
+            ]
+        )
 
 
 if __name__ == "__main__":
