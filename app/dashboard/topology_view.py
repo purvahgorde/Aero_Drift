@@ -32,20 +32,7 @@ def _add_children(parent_branch, nx_graph, node_id):
 
 
 def render_topology(graph):
-    """Render the cloud topology graph as a rich tree view.
-
-    Produces a nested hierarchy starting from root nodes (nodes with no
-    incoming edges), e.g.:
-
-        AeroDrift Cloud Topology
-        VPC: vpc-001 (AeroDrift-VPC)
-        ├── Subnet: subnet-001
-        │   └── EC2: i-001 (web-server-1)
-        │       └── SecurityGroup: sg-001 (web-sg)
-        └── Subnet: subnet-002
-            └── EC2: i-002 (db-server-1)
-                └── SecurityGroup: sg-002 (db-sg)
-    """
+    """Render the topology graph as a tree in the console."""
     nx_graph = graph.graph if hasattr(graph, "graph") else graph
 
     tree = Tree("[bold cyan]AeroDrift Cloud Topology[/bold cyan]")

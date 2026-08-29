@@ -119,8 +119,6 @@ def cmd_topology():
 
 
 
-
-
 def _print_usage():
     """Print CLI usage help."""
     print("=" * 40)
