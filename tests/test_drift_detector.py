@@ -3,22 +3,34 @@ from app.graph.nodes import CloudNode
 from app.detection.drift_detector import detect_drift
 
 
-# -----------------------------
-# Previous topology
-# -----------------------------
+# ==========================================
+# PREVIOUS TOPOLOGY
+# ==========================================
 
 previous = CloudTopology()
 
 previous.add_node(
-    CloudNode("vpc-001", "VPC", "main-vpc")
+    CloudNode(
+        "vpc-001",
+        "VPC",
+        "main-vpc"
+    )
 )
 
 previous.add_node(
-    CloudNode("subnet-001", "Subnet", "private-subnet")
+    CloudNode(
+        "subnet-001",
+        "Subnet",
+        "private-subnet"
+    )
 )
 
 previous.add_node(
-    CloudNode("i-12345", "EC2", "web-server")
+    CloudNode(
+        "i-12345",
+        "EC2",
+        "web-server"
+    )
 )
 
 previous.add_relationship(
@@ -32,27 +44,35 @@ previous.add_relationship(
 )
 
 
-# -----------------------------
-# Current topology
-# -----------------------------
+# ==========================================
+# CURRENT TOPOLOGY
+# ==========================================
 
 current = CloudTopology()
 
 current.add_node(
-    CloudNode("vpc-001", "VPC", "main-vpc")
+    CloudNode(
+        "vpc-001",
+        "VPC",
+        "main-vpc"
+    )
 )
 
 current.add_node(
-    CloudNode("subnet-001", "Subnet", "private-subnet")
+    CloudNode(
+        "subnet-001",
+        "Subnet",
+        "private-subnet"
+    )
 )
 
+# Same EC2 ID but name has changed
 current.add_node(
-    CloudNode("i-12345", "EC2", "web-server")
-)
-
-# New database
-current.add_node(
-    CloudNode("db-001", "Database", "private-db")
+    CloudNode(
+        "i-12345",
+        "EC2",
+        "production-server"
+    )
 )
 
 current.add_relationship(
@@ -65,16 +85,10 @@ current.add_relationship(
     "i-12345"
 )
 
-# New relationship
-current.add_relationship(
-    "i-12345",
-    "db-001"
-)
 
-
-# -----------------------------
-# Detect drift
-# -----------------------------
+# ==========================================
+# DETECT DRIFT
+# ==========================================
 
 drift = detect_drift(
     previous,
@@ -83,3 +97,25 @@ drift = detect_drift(
 
 print("Drift:")
 print(drift)
+
+
+# ==========================================
+# VERIFY RESULT
+# ==========================================
+
+assert "i-12345" not in drift["nodes"]["added"]
+
+assert "i-12345" not in drift["nodes"]["removed"]
+
+assert len(drift["nodes"]["changed"]) == 1
+
+changed = drift["nodes"]["changed"][0]
+
+assert changed["resource_id"] == "i-12345"
+
+assert changed["changes"]["name"]["previous"] == "web-server"
+
+assert changed["changes"]["name"]["current"] == "production-server"
+
+
+print("Day 2 test passed!")
