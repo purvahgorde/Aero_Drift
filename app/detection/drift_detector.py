@@ -21,24 +21,25 @@ def detect_node_changes(previous_topology, current_topology):
 
     for node_id in common_nodes:
 
-        previous_data = previous_topology.graph.nodes[node_id]
-        current_data = current_topology.graph.nodes[node_id]
+        previous_data = dict(previous_topology.graph.nodes[node_id])
+        current_data = dict(current_topology.graph.nodes[node_id])
 
         changes = {}
 
-        # Compare resource type
-        if previous_data.get("resource_type") != current_data.get("resource_type"):
-            changes["resource_type"] = {
-                "previous": previous_data.get("resource_type"),
-                "current": current_data.get("resource_type")
-            }
+        # Check all attributes from both states
+        all_attributes = set(previous_data.keys()) | set(current_data.keys())
 
-        # Compare name
-        if previous_data.get("name") != current_data.get("name"):
-            changes["name"] = {
-                "previous": previous_data.get("name"),
-                "current": current_data.get("name")
-            }
+        for attribute in all_attributes:
+
+            previous_value = previous_data.get(attribute)
+            current_value = current_data.get(attribute)
+
+            if previous_value != current_value:
+
+                changes[attribute] = {
+                    "previous": previous_value,
+                    "current": current_value
+                }
 
         if changes:
             changed_nodes.append({

@@ -11,37 +11,15 @@ previous = CloudTopology()
 
 previous.add_node(
     CloudNode(
-        "vpc-001",
-        "VPC",
-        "main-vpc"
-    )
-)
-
-previous.add_node(
-    CloudNode(
-        "subnet-001",
-        "Subnet",
-        "private-subnet"
-    )
-)
-
-previous.add_node(
-    CloudNode(
         "i-12345",
         "EC2",
         "web-server"
     )
 )
 
-previous.add_relationship(
-    "vpc-001",
-    "subnet-001"
-)
-
-previous.add_relationship(
-    "subnet-001",
-    "i-12345"
-)
+# Add extra configuration information
+previous.graph.nodes["i-12345"]["state"] = "running"
+previous.graph.nodes["i-12345"]["subnet_id"] = "subnet-001"
 
 
 # ==========================================
@@ -52,38 +30,15 @@ current = CloudTopology()
 
 current.add_node(
     CloudNode(
-        "vpc-001",
-        "VPC",
-        "main-vpc"
-    )
-)
-
-current.add_node(
-    CloudNode(
-        "subnet-001",
-        "Subnet",
-        "private-subnet"
-    )
-)
-
-# Same EC2 ID but name has changed
-current.add_node(
-    CloudNode(
         "i-12345",
         "EC2",
         "production-server"
     )
 )
 
-current.add_relationship(
-    "vpc-001",
-    "subnet-001"
-)
-
-current.add_relationship(
-    "subnet-001",
-    "i-12345"
-)
+# Configuration has changed
+current.graph.nodes["i-12345"]["state"] = "stopped"
+current.graph.nodes["i-12345"]["subnet_id"] = "subnet-002"
 
 
 # ==========================================
@@ -100,12 +55,8 @@ print(drift)
 
 
 # ==========================================
-# VERIFY RESULT
+# VERIFY
 # ==========================================
-
-assert "i-12345" not in drift["nodes"]["added"]
-
-assert "i-12345" not in drift["nodes"]["removed"]
 
 assert len(drift["nodes"]["changed"]) == 1
 
@@ -117,5 +68,13 @@ assert changed["changes"]["name"]["previous"] == "web-server"
 
 assert changed["changes"]["name"]["current"] == "production-server"
 
+assert changed["changes"]["state"]["previous"] == "running"
 
-print("Day 2 test passed!")
+assert changed["changes"]["state"]["current"] == "stopped"
+
+assert changed["changes"]["subnet_id"]["previous"] == "subnet-001"
+
+assert changed["changes"]["subnet_id"]["current"] == "subnet-002"
+
+
+print("Day 3 test passed!")
