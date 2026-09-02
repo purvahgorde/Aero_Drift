@@ -1,29 +1,12 @@
 from app.remediation.remediation import generate_remediation_suggestions
 
 
-drift = {
+# Test added resource
+added_resource_drift = {
     "nodes": {
-        "added": [],
+        "added": ["db-002"],
         "removed": [],
-        "changed": [
-            {
-                "resource_id": "i-12345",
-                "changes": {
-                    "name": {
-                        "previous": "web-server",
-                        "current": "production-server"
-                    },
-                    "state": {
-                        "previous": "running",
-                        "current": "stopped"
-                    },
-                    "subnet_id": {
-                        "previous": "subnet-001",
-                        "current": "subnet-002"
-                    }
-                }
-            }
-        ]
+        "changed": []
     },
     "relationships": {
         "added": [],
@@ -31,32 +14,15 @@ drift = {
     }
 }
 
-
-suggestions = generate_remediation_suggestions(drift)
-
+added_suggestions = generate_remediation_suggestions(
+    added_resource_drift
+)
 
 print("Remediation Suggestions:")
-
-for suggestion in suggestions:
+for suggestion in added_suggestions:
     print(suggestion)
 
+assert len(added_suggestions) == 1
+assert added_suggestions[0]["resource_id"] == "db-002"
 
-assert len(suggestions) == 3
-
-assert any(
-    s["action"] == "Review resource state"
-    for s in suggestions
-)
-
-assert any(
-    s["action"] == "Review subnet configuration"
-    for s in suggestions
-)
-
-assert any(
-    s["action"] == "Review resource name"
-    for s in suggestions
-)
-
-
-print("Day 4 test passed!")
+print("Added resource remediation test passed!")
