@@ -4,16 +4,19 @@ import os
 # Ensure project root is in sys.path when executed directly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.dashboard.cli import show_welcome
+from app.dashboard.cli import show_welcome, render_dashboard
 from app.dashboard.summary import show_summary
 from app.dashboard.topology_view import render_topology
 from app.ingestion.collector import collect_all_resources
 from app.graph.topology import create_network_graph
+from app.graph.builder import build_cloud_graph
+from app.graph.drift_detector import detect_public_database_exposure
+from app.detection.security_analysis import detect_security_findings
 from app.config import load_config, ConfigError
 
 
 
-AVAILABLE_COMMANDS = ["summary", "topology", "config"]
+AVAILABLE_COMMANDS = ["summary", "topology", "dashboard", "config"]
 
 
 def _collect_and_build():
@@ -37,6 +40,41 @@ def _collect_and_build():
         return resources, None
 
     return resources, topology
+
+
+def _run_security_analysis(resources, topology):
+    """Run all available security detection and return combined findings.
+
+    Returns a list of finding dicts.  Never raises — returns [] on error.
+    """
+    findings = []
+
+    # 1. Member 2's security analysis (detect_security_findings)
+    try:
+        sa_findings = detect_security_findings(topology, resources)
+        if sa_findings:
+            findings.extend(sa_findings)
+    except Exception:
+        pass  # graceful degradation
+
+    # 2. Member 3's graph-based detection (detect_public_database_exposure)
+    try:
+        cloud_graph = build_cloud_graph(resources)
+        graph_findings = detect_public_database_exposure(cloud_graph)
+        if graph_findings:
+            # Avoid exact duplicates by checking resource_id
+            existing_ids = {
+                (f.get("resource_id") or f.get("instance_id"), f.get("reason"))
+                for f in findings
+            }
+            for gf in graph_findings:
+                key = (gf.get("resource_id"), gf.get("reason"))
+                if key not in existing_ids:
+                    findings.append(gf)
+    except Exception:
+        pass  # graceful degradation
+
+    return findings
 
 
 def run():
@@ -117,6 +155,18 @@ def cmd_topology():
     render_topology(topology)
 
 
+def cmd_dashboard():
+    """Display the full modern CLI dashboard."""
+    resources, topology = _collect_and_build()
+    if resources is None:
+        return
+
+    # Run security analysis
+    findings = []
+    if topology is not None:
+        findings = _run_security_analysis(resources, topology)
+
+    render_dashboard(resources, topology, findings)
 
 
 def _print_usage():
@@ -129,6 +179,7 @@ def _print_usage():
     print("  python -m app.main              Run full pipeline")
     print("  python -m app.main summary      Infrastructure summary")
     print("  python -m app.main topology     Topology summary and tree")
+    print("  python -m app.main dashboard    Full security dashboard")
     print()
     print(f"Available commands: {', '.join(AVAILABLE_COMMANDS)}")
     print("=" * 40)
@@ -151,6 +202,8 @@ def main():
         cmd_summary()
     elif command == "topology":
         cmd_topology()
+    elif command == "dashboard":
+        cmd_dashboard()
     else:
         print(f"Error: unknown command '{args[0]}'", file=sys.stderr)
         print(file=sys.stderr)
