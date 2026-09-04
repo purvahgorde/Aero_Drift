@@ -78,3 +78,65 @@ assert changed["changes"]["subnet_id"]["current"] == "subnet-002"
 
 
 print("Day 3 test passed!")
+
+# ==========================================
+# WEEK 4 DAY 1 - NO DRIFT TEST
+# ==========================================
+
+previous_no_drift = CloudTopology()
+
+previous_no_drift.add_node(
+    CloudNode(
+        "i-12345",
+        "EC2",
+        "web-server"
+    )
+)
+
+previous_no_drift.graph.nodes["i-12345"]["state"] = "running"
+previous_no_drift.graph.nodes["i-12345"]["subnet_id"] = "subnet-001"
+
+
+current_no_drift = CloudTopology()
+
+current_no_drift.add_node(
+    CloudNode(
+        "i-12345",
+        "EC2",
+        "web-server"
+    )
+)
+
+current_no_drift.graph.nodes["i-12345"]["state"] = "running"
+current_no_drift.graph.nodes["i-12345"]["subnet_id"] = "subnet-001"
+
+
+# ==========================================
+# DETECT DRIFT
+# ==========================================
+
+no_drift = detect_drift(
+    previous_no_drift,
+    current_no_drift
+)
+
+print("No Drift:")
+print(no_drift)
+
+
+# ==========================================
+# VERIFY
+# ==========================================
+
+assert no_drift["nodes"]["added"] == []
+
+assert no_drift["nodes"]["removed"] == []
+
+assert no_drift["nodes"]["changed"] == []
+
+assert no_drift["relationships"]["added"] == []
+
+assert no_drift["relationships"]["removed"] == []
+
+
+print("Week 4 Day 1 no-drift test passed!")
