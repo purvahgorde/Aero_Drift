@@ -156,3 +156,56 @@ def test_public_security_group_ingress_reaches_graph():
                     "internet",
                     security_group["id"]
                 )        
+
+
+
+def test_collect_aws_state_handles_empty_aws_response():
+    class EmptyEC2Client:
+        def describe_vpcs(self):
+            return {"Vpcs": []}
+
+        def describe_instances(self):
+            return {"Reservations": []}
+
+    client = EmptyEC2Client()
+
+    state = collect_aws_state(ec2_client=client)
+
+    assert state["vpcs"] == []
+    assert state["instances"] == []                
+
+
+
+def test_collect_aws_state_handles_missing_aws_lists():
+    class MissingResourceEC2Client:
+        def describe_vpcs(self):
+            return {}
+
+        def describe_instances(self):
+            return {}
+
+    client = MissingResourceEC2Client()
+
+    state = collect_aws_state(ec2_client=client)
+
+    assert state["vpcs"] == []
+    assert state["instances"] == []    
+
+
+
+def test_collect_aws_state_falls_back_when_aws_client_fails():
+    class FailingEC2Client:
+        def describe_vpcs(self):
+            raise RuntimeError("AWS unavailable")
+
+        def describe_instances(self):
+            raise RuntimeError("AWS unavailable")
+
+    client = FailingEC2Client()
+
+    state = collect_aws_state(ec2_client=client)
+
+    assert "vpcs" in state
+    assert "instances" in state
+    assert len(state["vpcs"]) > 0
+    assert len(state["instances"]) > 0    
