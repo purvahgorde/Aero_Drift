@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from app.ingestion.collector import collect_aws_state
+from app.graph.builder import build_cloud_graph
 
 
 def test_collect_aws_state_returns_vpcs_and_instances():
@@ -88,3 +89,70 @@ def test_mock_vpc_relationships_are_consistent():
 
     for instance in data["instances"]:
         assert instance["vpc_id"] in vpc_ids
+
+
+def test_mock_aws_state_flows_into_cloud_graph():
+    mock_file = Path("data/mock_aws_state.json")
+
+    with mock_file.open("r", encoding="utf-8") as file:
+        cloud_state = json.load(file)
+
+    graph = build_cloud_graph(cloud_state)
+
+    assert "internet" in graph
+
+    for vpc in cloud_state["vpcs"]:
+        assert vpc["id"] in graph
+
+    for subnet in cloud_state["subnets"]:
+        assert subnet["id"] in graph
+
+    for instance in cloud_state["instances"]:
+        assert instance["id"] in graph
+
+    for security_group in cloud_state["security_groups"]:
+        assert security_group["id"] in graph
+
+
+def test_cloud_graph_preserves_resource_relationships():
+    mock_file = Path("data/mock_aws_state.json")
+
+    with mock_file.open("r", encoding="utf-8") as file:
+        cloud_state = json.load(file)
+
+    graph = build_cloud_graph(cloud_state)
+
+    for subnet in cloud_state["subnets"]:
+        assert graph.has_edge(
+            subnet["vpc_id"],
+            subnet["id"]
+        )
+
+    for instance in cloud_state["instances"]:
+        assert graph.has_edge(
+            instance["subnet_id"],
+            instance["id"]
+        )
+
+        for security_group_id in instance["security_group_ids"]:
+            assert graph.has_edge(
+                security_group_id,
+                instance["id"]
+            )
+
+
+def test_public_security_group_ingress_reaches_graph():
+    mock_file = Path("data/mock_aws_state.json")
+
+    with mock_file.open("r", encoding="utf-8") as file:
+        cloud_state = json.load(file)
+
+    graph = build_cloud_graph(cloud_state)
+
+    for security_group in cloud_state["security_groups"]:
+        for rule in security_group.get("ingress_rules", []):
+            if rule.get("source") == "0.0.0.0/0":
+                assert graph.has_edge(
+                    "internet",
+                    security_group["id"]
+                )        
