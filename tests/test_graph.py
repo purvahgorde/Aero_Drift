@@ -117,3 +117,28 @@ def test_drift_detector_returns_no_finding_for_private_database():
     findings = detect_public_database_exposure(graph)
 
     assert findings == []
+
+
+
+
+
+
+def test_end_to_end_cloud_audit_detects_public_database():
+    import json
+    from pathlib import Path
+
+    from app.graph.builder import build_cloud_graph
+    from app.graph.drift_detector import detect_public_database_exposure
+
+    mock_file = Path("data/mock_aws_state.json")
+
+    with mock_file.open("r", encoding="utf-8") as file:
+        cloud_state = json.load(file)
+
+    graph = build_cloud_graph(cloud_state)
+
+    findings = detect_public_database_exposure(graph)
+
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "CRITICAL"
+    assert findings[0]["resource_id"] == "i-002"
