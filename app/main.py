@@ -156,7 +156,7 @@ def cmd_topology():
 
 
 def cmd_dashboard():
-    """Display the full modern CLI dashboard."""
+    """Display the full modern CLI dashboard with interactive menu."""
     resources, topology = _collect_and_build()
     if resources is None:
         return
@@ -167,6 +167,48 @@ def cmd_dashboard():
         findings = _run_security_analysis(resources, topology)
 
     render_dashboard(resources, topology, findings)
+
+    # Interactive menu loop
+    while True:
+        try:
+            choice = input("\n  Select action ([1-4] or [Q]): ").strip().upper()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        if choice == "Q":
+            break
+        elif choice == "1":
+            # Re-scan infrastructure and refresh dashboard
+            print()
+            resources, topology = _collect_and_build()
+            if resources is None:
+                continue
+            findings = []
+            if topology is not None:
+                findings = _run_security_analysis(resources, topology)
+            render_dashboard(resources, topology, findings)
+        elif choice == "2":
+            # View security findings detail
+            print()
+            from app.dashboard.audit import show_drift_findings
+            show_drift_findings(findings)
+        elif choice == "3":
+            # View topology tree
+            print()
+            if topology is not None:
+                render_topology(topology)
+            else:
+                print("  Topology data not available.")
+        elif choice == "4":
+            # View remediation details
+            print()
+            from app.dashboard.cli import _render_remediation, _get_dashboard_width
+            from app.dashboard.cli import console as cli_console
+            width = _get_dashboard_width(cli_console)
+            _render_remediation(findings, cli_console, width)
+        else:
+            print(f"  Unknown option: {choice}")
 
 
 def _print_usage():
