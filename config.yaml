@@ -1,0 +1,16 @@
+# AeroDrift Configuration
+# ========================
+# Central configuration file for the AeroDrift cloud topology platform.
+
+app:
+  name: "AeroDrift"
+  description: "Cloud Topology & Remediation Platform"
+  version: "0.1.0"
+
+aws:
+  region: "us-east-1"
+  mock_data_path: "data/mock_aws_state.json"
+
+logging:
+  level: "INFO"
+  verbose: false

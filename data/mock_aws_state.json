@@ -1,0 +1,81 @@
+{
+  "vpcs": [
+    {
+      "id": "vpc-001",
+      "cidr": "10.0.0.0/16",
+      "state": "available",
+      "tags": [
+        {
+          "Key": "Name",
+          "Value": "AeroDrift-VPC"
+        }
+      ]
+    }
+  ],
+  "subnets": [
+    {
+      "id": "subnet-001",
+      "vpc_id": "vpc-001",
+      "cidr": "10.0.1.0/24",
+      "availability_zone": "us-east-1a"
+    },
+    {
+      "id": "subnet-002",
+      "vpc_id": "vpc-001",
+      "cidr": "10.0.2.0/24",
+      "availability_zone": "us-east-1b"
+    }
+  ],
+  "instances": [
+    {
+      "id": "i-001",
+      "name": "web-server-1",
+      "subnet_id": "subnet-001",
+      "vpc_id": "vpc-001",
+      "state": "running",
+      "security_group_ids": [
+        "sg-001"
+      ]
+    },
+    {
+      "id": "i-002",
+      "name": "db-server-1",
+      "subnet_id": "subnet-002",
+      "vpc_id": "vpc-001",
+      "state": "stopped",
+      "security_group_ids": [
+        "sg-002"
+      ]
+    }
+  ],
+  "security_groups": [
+    {
+      "id": "sg-001",
+      "vpc_id": "vpc-001",
+      "name": "web-sg",
+      "description": "Web Security Group",
+      "ingress_rules": [
+        {
+          "protocol": "tcp",
+          "from_port": 80,
+          "to_port": 80,
+          "source": "0.0.0.0/0"
+        }
+      ]
+    },
+    {
+      "id": "sg-002",
+      "vpc_id": "vpc-001",
+      "name": "db-sg",
+      "description": "Database Security Group",
+      "ingress_rules": [
+        {
+          "protocol": "tcp",
+          "from_port": 22,
+          "to_port": 22,
+          "source": "0.0.0.0/0"
+        }
+      ]
+    }
+  ]
+}
