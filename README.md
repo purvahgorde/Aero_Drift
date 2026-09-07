@@ -40,6 +40,5 @@ python -m app.main config
 
 Team Responsibilities
 Member 1: AWS/Mock Resource Ingestion
-Member 2: Security Analysis
-Member 3: NetworkX Topology, Drift Detection & Remediation
-Member 4: CLI, Dashboard & System Integration
+Member 2: NetworkX Topology, Drift Detection & Remediation
+Member 3: Security Analysis, CLI, Dashboard & System Integration
