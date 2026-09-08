@@ -180,6 +180,57 @@ class TestCLICommands(unittest.TestCase):
         self.assertIn("AERODRIFT SUMMARY", output)
         self.assertIn("Total resources    : 0", output)
 
+    # -- config command ----------------------------------------------------
+
+    def test_config_output(self):
+        output = self._run_main(["config"])
+        self.assertIn("AERODRIFT CONFIGURATION", output)
+        self.assertIn("App Name", output)
+        self.assertIn("AeroDrift", output)
+        self.assertIn("AWS Region", output)
+        self.assertIn("us-east-1", output)
+        self.assertIn("Log Level", output)
+
+    # -- security command --------------------------------------------------
+
+    @patch("app.main.collect_all_resources", side_effect=_mock_collect)
+    def test_security_output(self, _mock):
+        output = self._run_main(["security"])
+        self.assertIn("SECURITY FINDINGS", output)
+
+    @patch("app.main.collect_all_resources",
+           return_value={"vpcs": [], "subnets": [], "instances": [], "security_groups": []})
+    def test_security_no_findings(self, _mock):
+        output = self._run_main(["security"])
+        self.assertIn("SECURITY FINDINGS", output)
+        self.assertIn("SECURE", output)
+
+    # -- drift command -----------------------------------------------------
+
+    def test_drift_output(self):
+        output = self._run_main(["drift"])
+        self.assertIn("DRIFT DETECTION RESULTS", output)
+        self.assertIn("Nodes added", output)
+        self.assertIn("Nodes removed", output)
+        self.assertIn("Nodes changed", output)
+        self.assertIn("DRIFT DETECTED", output)
+
+    # -- scan command ------------------------------------------------------
+
+    @patch("app.main.collect_all_resources", side_effect=_mock_collect)
+    def test_scan_output(self, _mock):
+        output = self._run_main(["scan"])
+        self.assertIn("AERODRIFT", output)
+
+    # -- help includes new commands ----------------------------------------
+
+    def test_help_shows_all_commands(self):
+        output = self._run_main(["--help"])
+        self.assertIn("security", output)
+        self.assertIn("drift", output)
+        self.assertIn("config", output)
+        self.assertIn("scan", output)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,7 +33,7 @@ def show_drift_findings(
     table.add_column("Network Path")
 
     for finding in findings:
-        path = " → ".join(finding.get("path", []))
+        path = " -> ".join(finding.get("path", []))
         security_groups = ", ".join(finding.get("security_groups", []))
 
         table.add_row(

@@ -12,11 +12,14 @@ from app.graph.topology import create_network_graph
 from app.graph.builder import build_cloud_graph
 from app.graph.drift_detector import detect_public_database_exposure
 from app.detection.security_analysis import detect_security_findings
+from app.detection.drift_detector import detect_drift
 from app.config import load_config, ConfigError
+from app.persistence.database import AeroDriftDB, DatabaseError
+from app.persistence.models import compare_scans, build_drift_summary
 
 
 
-AVAILABLE_COMMANDS = ["summary", "topology", "dashboard", "config"]
+AVAILABLE_COMMANDS = ["summary", "topology", "dashboard", "config", "security", "drift", "scan", "history"]
 
 
 def _collect_and_build():
@@ -211,6 +214,189 @@ def cmd_dashboard():
             print(f"  Unknown option: {choice}")
 
 
+def cmd_config():
+    """Display the current AeroDrift configuration."""
+    try:
+        config = load_config()
+    except ConfigError as exc:
+        print(f"Error loading configuration: {exc}", file=sys.stderr)
+        return
+
+    print("=" * 40)
+    print("     AERODRIFT CONFIGURATION")
+    print("=" * 40)
+    print()
+    print(f"  App Name           : {config.app.name}")
+    print(f"  Description        : {config.app.description}")
+    print(f"  Version            : {config.app.version}")
+    print()
+    print(f"  AWS Region         : {config.aws.region}")
+    print(f"  Mock Data Path     : {config.aws.mock_data_path}")
+    print()
+    print(f"  Log Level          : {config.logging.level}")
+    print(f"  Verbose            : {config.logging.verbose}")
+    print()
+    print("=" * 40)
+
+
+def cmd_security():
+    """Display standalone security findings."""
+    resources, topology = _collect_and_build()
+    if resources is None:
+        return
+
+    findings = []
+    if topology is not None:
+        findings = _run_security_analysis(resources, topology)
+
+    print("=" * 40)
+    print("     SECURITY FINDINGS")
+    print("=" * 40)
+    print()
+
+    if not findings:
+        print("  No security findings detected.")
+        print()
+        print("  Status: SECURE")
+    else:
+        for i, finding in enumerate(findings, 1):
+            severity = finding.get("severity", "UNKNOWN")
+            resource = (
+                finding.get("resource_name")
+                or finding.get("resource_id")
+                or finding.get("instance_id")
+                or "Unknown"
+            )
+            reason = finding.get("reason", "Security issue detected")
+            sgs = finding.get("security_groups", [])
+            path = finding.get("path", [])
+
+            print(f"  [{i}] [{severity}] {resource}")
+            print(f"      Reason : {reason}")
+            if sgs:
+                print(f"      SGs    : {', '.join(sgs)}")
+            if path:
+                print(f"      Path   : {' -> '.join(str(p) for p in path)}")
+            print()
+
+        high_count = sum(
+            1 for f in findings
+            if f.get("severity", "").upper() in ("HIGH", "CRITICAL")
+        )
+        print(f"  Total findings : {len(findings)}")
+        print(f"  High/Critical  : {high_count}")
+
+    print()
+    print("=" * 40)
+
+
+def cmd_drift():
+    """Demonstrate drift detection between two topology snapshots."""
+    from app.graph.topology import CloudTopology
+    from app.graph.nodes import CloudNode
+
+    # Build a "previous" topology snapshot
+    previous = CloudTopology()
+    previous.add_node(CloudNode("vpc-001", "VPC", "AeroDrift-VPC"))
+    previous.add_node(CloudNode("subnet-001", "Subnet"))
+    previous.add_node(CloudNode("i-001", "EC2", "web-server-1"))
+    previous.add_node(CloudNode("sg-001", "SecurityGroup", "web-sg"))
+
+    previous.add_relationship("vpc-001", "subnet-001")
+    previous.add_relationship("subnet-001", "i-001")
+    previous.add_relationship("i-001", "sg-001")
+
+    previous.graph.nodes["i-001"]["state"] = "running"
+    previous.graph.nodes["i-001"]["subnet_id"] = "subnet-001"
+
+    # Build a "current" topology snapshot with changes
+    current = CloudTopology()
+    current.add_node(CloudNode("vpc-001", "VPC", "AeroDrift-VPC"))
+    current.add_node(CloudNode("subnet-001", "Subnet"))
+    current.add_node(CloudNode("subnet-002", "Subnet"))
+    current.add_node(CloudNode("i-001", "EC2", "production-server"))
+    current.add_node(CloudNode("sg-001", "SecurityGroup", "web-sg"))
+    current.add_node(CloudNode("sg-002", "SecurityGroup", "db-sg"))
+
+    current.add_relationship("vpc-001", "subnet-001")
+    current.add_relationship("vpc-001", "subnet-002")
+    current.add_relationship("subnet-001", "i-001")
+    current.add_relationship("i-001", "sg-001")
+
+    current.graph.nodes["i-001"]["state"] = "stopped"
+    current.graph.nodes["i-001"]["subnet_id"] = "subnet-001"
+
+    # Detect drift
+    drift = detect_drift(previous, current)
+
+    print("=" * 40)
+    print("     DRIFT DETECTION RESULTS")
+    print("=" * 40)
+    print()
+
+    # Node changes
+    added = drift["nodes"]["added"]
+    removed = drift["nodes"]["removed"]
+    changed = drift["nodes"]["changed"]
+
+    print(f"  Nodes added    : {len(added)}")
+    if added:
+        for node_id in added:
+            print(f"    + {node_id}")
+
+    print(f"  Nodes removed  : {len(removed)}")
+    if removed:
+        for node_id in removed:
+            print(f"    - {node_id}")
+
+    print(f"  Nodes changed  : {len(changed)}")
+    if changed:
+        for change in changed:
+            print(f"    ~ {change['resource_id']}")
+            for attr, vals in change["changes"].items():
+                print(f"        {attr}: {vals['previous']} -> {vals['current']}")
+
+    print()
+
+    # Relationship changes
+    rel_added = drift["relationships"]["added"]
+    rel_removed = drift["relationships"]["removed"]
+
+    print(f"  Edges added    : {len(rel_added)}")
+    if rel_added:
+        for src, dst in rel_added:
+            print(f"    + {src} -> {dst}")
+
+    print(f"  Edges removed  : {len(rel_removed)}")
+    if rel_removed:
+        for src, dst in rel_removed:
+            print(f"    - {src} -> {dst}")
+
+    print()
+
+    total_changes = len(added) + len(removed) + len(changed) + len(rel_added) + len(rel_removed)
+    if total_changes == 0:
+        print("  Status: NO DRIFT DETECTED")
+    else:
+        print(f"  Status: DRIFT DETECTED ({total_changes} change(s))")
+
+    print("=" * 40)
+
+
+def cmd_scan():
+    """Quick scan: collect, analyse, and display results (non-interactive)."""
+    resources, topology = _collect_and_build()
+    if resources is None:
+        return
+
+    # Run security analysis
+    findings = []
+    if topology is not None:
+        findings = _run_security_analysis(resources, topology)
+
+    render_dashboard(resources, topology, findings)
+
+
 def _print_usage():
     """Print CLI usage help."""
     print("=" * 40)
@@ -222,6 +408,10 @@ def _print_usage():
     print("  python -m app.main summary      Infrastructure summary")
     print("  python -m app.main topology     Topology summary and tree")
     print("  python -m app.main dashboard    Full security dashboard")
+    print("  python -m app.main security     Security findings report")
+    print("  python -m app.main drift        Drift detection demo")
+    print("  python -m app.main config       Show configuration")
+    print("  python -m app.main scan         Quick scan (non-interactive)")
     print()
     print(f"Available commands: {', '.join(AVAILABLE_COMMANDS)}")
     print("=" * 40)
@@ -246,6 +436,14 @@ def main():
         cmd_topology()
     elif command == "dashboard":
         cmd_dashboard()
+    elif command == "config":
+        cmd_config()
+    elif command == "security":
+        cmd_security()
+    elif command == "drift":
+        cmd_drift()
+    elif command == "scan":
+        cmd_scan()
     else:
         print(f"Error: unknown command '{args[0]}'", file=sys.stderr)
         print(file=sys.stderr)
