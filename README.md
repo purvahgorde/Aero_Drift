@@ -512,10 +512,9 @@ tests/test_topology.py         ✅ 13 passed    (Topology operations)
 
 ## 👥 Team Members
 
-- **Member 1** — Ingestion Layer, Config Management, CLI Framework
-- **Member 2** — Security Analysis, Dashboard UI, Integration
-- **Member 3** — Graph Builder, Public Exposure Detection
-- **Member 4** — Remediation Engine (Generator, Validator, Sandbox), SQLite Persistence
+-**Shivanandini Saddanapu:** AWS/Mock Resource Ingestion 
+-**Purva Gorde:** NetworkX Topology, Drift Detection & Remediation 
+-**Pranay Mahajan:** Security Analysis, CLI, Dashboard & System Integration
 
 ---
 
