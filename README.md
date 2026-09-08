@@ -522,7 +522,7 @@ tests/test_topology.py         ✅ 13 passed    (Topology operations)
 
 ## 📄 License
 
-This project is developed as part of an academic/team project. All rights reserved.
+All rights reserved.
 
 ---
 
