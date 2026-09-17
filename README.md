@@ -526,5 +526,5 @@ All rights reserved.
 ---
 
 <p align="center">
-  <strong>Built with ❤️ by the AeroDrift Team</strong>
+  <strong>Built with ❤️ By the Team AeroDrift</strong>
 </p>
