@@ -514,9 +514,8 @@ tests/test_topology.py         ✅ 13 passed    (Topology operations)
 
 | Member | Responsibilities |
 |--------|------------------|
-| **Shivanandini Saddanapu** | AWS/Mock Resource Ingestion |
 | **Purva Gorde** | NetworkX Topology, Drift Detection & Remediation |
-| **Pranay Mahajan** | Security Analysis, CLI, Dashboard & System Integration |
+| **Pranay Mahajan** | AWS/Mock Resource Ingestion, Security Analysis, CLI, Dashboard & System Integration |
 
 ---
 
